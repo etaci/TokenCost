@@ -1,0 +1,26 @@
+[package]
+name = "fusebox-policy"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Policy engine and circuit breaker state machine for Fusebox"
+repository.workspace = true
+
+[dependencies]
+fusebox-core = { workspace = true }
+fusebox-ledger = { workspace = true }
+
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+dashmap = { workspace = true }
+parking_lot = { workspace = true }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

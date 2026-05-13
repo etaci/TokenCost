@@ -1,0 +1,47 @@
+provider: anthropic
+last_updated: "2026-04-15"
+# Prices are USD per 1,000,000 tokens. Cache-write is more expensive than
+# input because Anthropic charges a 25 % premium for the initial write.
+models:
+  claude-haiku-4-5:
+    input_per_1m: 1.00
+    output_per_1m: 5.00
+    cache_read_per_1m: 0.10
+    cache_write_per_1m: 1.25
+
+  claude-sonnet-4-5:
+    input_per_1m: 3.00
+    output_per_1m: 15.00
+    cache_read_per_1m: 0.30
+    cache_write_per_1m: 3.75
+    aliases: ["claude-sonnet-4-5-20250929"]
+
+  claude-sonnet-4-6:
+    input_per_1m: 3.00
+    output_per_1m: 15.00
+    cache_read_per_1m: 0.30
+    cache_write_per_1m: 3.75
+
+  claude-opus-4:
+    input_per_1m: 15.00
+    output_per_1m: 75.00
+    cache_read_per_1m: 1.50
+    cache_write_per_1m: 18.75
+
+  claude-opus-4-7:
+    input_per_1m: 15.00
+    output_per_1m: 75.00
+    cache_read_per_1m: 1.50
+    cache_write_per_1m: 18.75
+
+  claude-3-5-haiku:
+    input_per_1m: 0.80
+    output_per_1m: 4.00
+    cache_read_per_1m: 0.08
+    cache_write_per_1m: 1.00
+
+  claude-3-5-sonnet:
+    input_per_1m: 3.00
+    output_per_1m: 15.00
+    cache_read_per_1m: 0.30
+    cache_write_per_1m: 3.75

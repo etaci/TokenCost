@@ -1,0 +1,43 @@
+provider: openai
+last_updated: "2026-04-01"
+# Prices are USD per 1,000,000 tokens. Verify against the OpenAI pricing
+# page before relying on these in production — the LiteLLM-driven sync job
+# is the source of truth once it runs.
+models:
+  gpt-4o-mini:
+    input_per_1m: 0.15
+    output_per_1m: 0.60
+    aliases: ["gpt-4o-mini-2024-07-18"]
+
+  gpt-4o:
+    input_per_1m: 2.50
+    output_per_1m: 10.00
+    aliases: ["gpt-4o-2024-08-06", "gpt-4o-2024-11-20"]
+
+  gpt-4-turbo:
+    input_per_1m: 10.00
+    output_per_1m: 30.00
+
+  gpt-4:
+    input_per_1m: 30.00
+    output_per_1m: 60.00
+
+  gpt-3.5-turbo:
+    input_per_1m: 0.50
+    output_per_1m: 1.50
+
+  o1-mini:
+    input_per_1m: 3.00
+    output_per_1m: 12.00
+
+  o1:
+    input_per_1m: 15.00
+    output_per_1m: 60.00
+
+  text-embedding-3-small:
+    input_per_1m: 0.02
+    output_per_1m: 0.0
+
+  text-embedding-3-large:
+    input_per_1m: 0.13
+    output_per_1m: 0.0

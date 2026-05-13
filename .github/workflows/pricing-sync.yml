@@ -1,0 +1,39 @@
+# Pricing data sync — pulls the LiteLLM-maintained model price list once
+# a day and opens a PR against the local `pricing/*.yaml` files.
+#
+# The converter lives in `scripts/sync-pricing.py`. It is stdlib-only so
+# the CI image needs no extra setup-python step.
+name: pricing-sync
+
+on:
+  schedule:
+    - cron: "17 5 * * *" # 05:17 UTC daily
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run sync
+        run: python scripts/sync-pricing.py
+      - name: Open PR if pricing changed
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore(pricing): scheduled sync"
+          title: "chore(pricing): scheduled sync"
+          body: |
+            Automated pricing sync from
+            [BerriAI/litellm](https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json).
+
+            Review the diff before merging — LiteLLM occasionally publishes
+            a wrong price for a few hours after a provider announcement.
+          branch: chore/pricing-sync
+          delete-branch: true
