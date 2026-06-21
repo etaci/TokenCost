@@ -1,0 +1,64 @@
+# Fusebox — example configuration.
+#
+# Copy this file to `fusebox.yaml` in the directory where you run
+# `fusebox start`, or pass `--config /path/to/fusebox.yaml`. Everything
+# below is optional: missing keys fall back to sane defaults compiled
+# into the binary.
+
+proxy:
+  bind: 0.0.0.0:8080
+  # LLM streams can be long; raise this if you hit timeouts.
+  upstream_timeout_secs: 600
+
+storage:
+  # Indie default — zero dependencies. Switch to `postgres` once you
+  # outgrow a single box (the schema lives in
+  # crates/fusebox-ledger/migrations/postgres/).
+  type: sqlite
+  path: .fusebox/data.db
+
+policy:
+  # Applies to any tenant that has no per-tenant override below.
+  default_budget:
+    limit_usd: 50.0
+    window: day
+    label: default
+
+  # Cooldown before an Open breaker tries Half-Open.
+  breaker_cooldown_secs: 60
+  # How many successful trial requests close a Half-Open breaker.
+  halfopen_trials: 5
+
+  # Per-tenant overrides. Each value is a list so you can layer multiple
+  # windows (e.g. $1/min AND $20/day for the same tenant).
+  tenant_budgets:
+    user-42:
+      - limit_usd: 5.0
+        window: hour
+        label: alpha-user
+    background-agent:
+      - limit_usd: 1.0
+        window: hour
+      - limit_usd: 20.0
+        window: day
+
+providers:
+  openai:
+    provider: openai
+    base_url: https://api.openai.com
+  anthropic:
+    provider: anthropic
+    base_url: https://api.anthropic.com
+
+# Where Fusebox loads model pricing from on startup. The bundled YAML
+# files cover OpenAI and Anthropic; LiteLLM-driven sync (Phase 1 P0)
+# keeps them up to date.
+pricing:
+  dir: pricing
+
+telemetry:
+  # Set to `true` for a structured JSON log stream (better for Loki /
+  # Datadog). `false` gives you human-readable logs in dev.
+  json_logs: false
+  # Disable to avoid the small mmap overhead of the Prometheus exporter.
+  metrics_enabled: true

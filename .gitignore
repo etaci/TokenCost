@@ -1,0 +1,61 @@
+# ── Rust ─────────────────────────────────────────────
+/target/
+**/target/
+Cargo.lock.bak
+*.pdb
+
+# ── Node / pnpm ──────────────────────────────────────
+node_modules/
+.pnpm-store/
+.next/
+dist/
+build/
+*.tsbuildinfo
+
+# ── Python ───────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.uv-cache/
+
+# ── Fusebox runtime ──────────────────────────────────
+.fusebox/
+data.db
+data.db-shm
+data.db-wal
+*.sqlite
+*.sqlite-journal
+
+# ── Editors ──────────────────────────────────────────
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Secrets / env ────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+.fusebox.yaml.local
+
+# ── CI artifacts ─────────────────────────────────────
+coverage/
+*.lcov
+.criterion/
+flamegraph.svg
+perf.data*
+
+# ── Docs build ───────────────────────────────────────
+docs/.next/
+docs/dist/
+
+# ── OS junk ──────────────────────────────────────────
+*.log
+*.tmp

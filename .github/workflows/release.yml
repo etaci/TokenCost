@@ -1,0 +1,163 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+  build-release:
+    name: Build Release
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: fusebox
+            asset_name: fusebox-linux-x64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            artifact_name: fusebox
+            asset_name: fusebox-linux-x64-musl
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: fusebox.exe
+            asset_name: fusebox-windows-x64.exe
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: fusebox
+            asset_name: fusebox-macos-x64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: fusebox
+            asset_name: fusebox-macos-arm64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Strip binary (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        run: strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
+          asset_name: ${{ matrix.asset_name }}
+          asset_content_type: application/octet-stream
+
+  publish-docker:
+    name: Publish Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            fusebox/fusebox:latest
+            fusebox/fusebox:${{ steps.version.outputs.VERSION }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  publish-crates:
+    name: Publish to crates.io
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Publish fusebox-core
+        run: cargo publish --token ${{ secrets.CARGO_TOKEN }} -p fusebox-core
+
+      - name: Wait for fusebox-core
+        run: sleep 10
+
+      - name: Publish fusebox-policy
+        run: cargo publish --token ${{ secrets.CARGO_TOKEN }} -p fusebox-policy
+
+      - name: Wait for fusebox-policy
+        run: sleep 10
+
+      - name: Publish fusebox-ledger
+        run: cargo publish --token ${{ secrets.CARGO_TOKEN }} -p fusebox-ledger
+
+      - name: Wait for fusebox-ledger
+        run: sleep 10
+
+      - name: Publish fusebox-proxy
+        run: cargo publish --token ${{ secrets.CARGO_TOKEN }} -p fusebox-proxy
+
+  publish-npm:
+    name: Publish MCP Server to npm
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/mcp-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

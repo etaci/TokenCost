@@ -1,0 +1,32 @@
+# Rust build artifacts
+target/
+Cargo.lock
+
+# Data directories
+.fusebox/
+data/
+
+# Test artifacts
+*.db
+*.db-shm
+*.db-wal
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+
+# Claude settings
+.claude/settings.local.json

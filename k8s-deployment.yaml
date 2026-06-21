@@ -1,0 +1,242 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fusebox
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fusebox-config
+  namespace: fusebox
+data:
+  fusebox.yaml: |
+    proxy:
+      bind: 0.0.0.0:8080
+      upstream_timeout_secs: 600
+
+    storage:
+      type: postgres
+      postgres_url: postgresql://fusebox:fusebox@postgres:5432/fusebox
+
+    policy:
+      default_budget:
+        limit_usd: 50.0
+        window: day
+        label: default
+
+      breaker_cooldown_secs: 60
+      halfopen_trials: 5
+
+    providers:
+      openai:
+        provider: openai
+        base_url: https://api.openai.com
+      anthropic:
+        provider: anthropic
+        base_url: https://api.anthropic.com
+
+    pricing:
+      dir: pricing
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: fusebox-secrets
+  namespace: fusebox
+type: Opaque
+stringData:
+  OPENAI_API_KEY: "sk-your-key-here"
+  ANTHROPIC_API_KEY: "sk-ant-your-key-here"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fusebox
+  namespace: fusebox
+  labels:
+    app: fusebox
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: fusebox
+  template:
+    metadata:
+      labels:
+        app: fusebox
+    spec:
+      containers:
+      - name: fusebox
+        image: fusebox:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: FUSEBOX_CONFIG
+          value: /etc/fusebox/fusebox.yaml
+        - name: RUST_LOG
+          value: info
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: fusebox-secrets
+              key: OPENAI_API_KEY
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: fusebox-secrets
+              key: ANTHROPIC_API_KEY
+        volumeMounts:
+        - name: config
+          mountPath: /etc/fusebox
+          readOnly: true
+        - name: data
+          mountPath: /data
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: config
+        configMap:
+          name: fusebox-config
+      - name: data
+        persistentVolumeClaim:
+          claimName: fusebox-data
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fusebox
+  namespace: fusebox
+  labels:
+    app: fusebox
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: fusebox
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fusebox-data
+  namespace: fusebox
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fusebox
+  namespace: fusebox
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: fusebox.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fusebox
+            port:
+              number: 8080
+
+---
+# PostgreSQL StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: fusebox
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_DB
+          value: fusebox
+        - name: POSTGRES_USER
+          value: fusebox
+        - name: POSTGRES_PASSWORD
+          value: fusebox
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 20Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: fusebox
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: postgres

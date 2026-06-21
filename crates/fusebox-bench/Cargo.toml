@@ -1,0 +1,23 @@
+[package]
+name = "fusebox-bench"
+version = "0.1.0"
+edition = "2021"
+
+[[bench]]
+name = "policy_bench"
+harness = false
+
+[[bench]]
+name = "ledger_bench"
+harness = false
+
+[[bench]]
+name = "breaker_bench"
+harness = false
+
+[dependencies]
+fusebox-core = { path = "../fusebox-core" }
+fusebox-policy = { path = "../fusebox-policy" }
+fusebox-ledger = { path = "../fusebox-ledger" }
+criterion = { version = "0.5", features = ["html_reports"] }
+tokio = { version = "1", features = ["full"] }

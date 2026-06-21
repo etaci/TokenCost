@@ -1,0 +1,17 @@
+[advisories]
+ignore = [
+    # RUSTSEC-2023-0071: Marvin Attack on RSA
+    # This is an indirect dependency (likely through rustls/ring for TLS).
+    # The vulnerability requires precise timing measurements of RSA decryption,
+    # which is not exploitable in our use case (we don't expose RSA decryption
+    # endpoints to untrusted inputs).
+    # Status: No fixed version available as of 2026-06-21.
+    # Action: Monitor for updates and remove this exception when fixed.
+    "RUSTSEC-2023-0071",
+]
+
+[database]
+path = "~/.cargo/advisory-db"
+url = "https://github.com/rustsec/advisory-db"
+fetch = true
+stale = false

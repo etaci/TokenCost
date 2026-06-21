@@ -1,0 +1,32 @@
+[package]
+name = "fusebox-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Operator CLI for Fusebox: start, status, tail, doctor"
+repository.workspace = true
+
+[[bin]]
+name = "fusebox"
+path = "src/main.rs"
+
+[dependencies]
+fusebox-core = { workspace = true }
+fusebox-ledger = { workspace = true }
+fusebox-policy = { workspace = true }
+fusebox-proxy = { path = "../fusebox-proxy" }
+
+tokio = { workspace = true }
+clap = { workspace = true }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+
+anyhow = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+reqwest = { workspace = true }
+uuid = { workspace = true }

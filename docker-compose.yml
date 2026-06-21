@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  fusebox:
+    build: .
+    image: fusebox:latest
+    container_name: fusebox
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./fusebox.yaml:/app/fusebox.yaml:ro
+      - fusebox-data:/data
+    environment:
+      - FUSEBOX_CONFIG=/app/fusebox.yaml
+      - FUSEBOX_DATA_DIR=/data/.fusebox
+      - RUST_LOG=info
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/fusebox", "doctor"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # Optional: PostgreSQL backend
+  postgres:
+    image: postgres:16-alpine
+    container_name: fusebox-postgres
+    environment:
+      - POSTGRES_DB=fusebox
+      - POSTGRES_USER=fusebox
+      - POSTGRES_PASSWORD=fusebox
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fusebox"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional: Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: fusebox-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+
+  # Optional: Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: fusebox-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+volumes:
+  fusebox-data:
+  postgres-data:
+  prometheus-data:
+  grafana-data:

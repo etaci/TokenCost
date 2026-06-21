@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "fusebox": {
+      "command": "node",
+      "args": ["dist/index.js"],
+      "env": {
+        "FUSEBOX_URL": "http://localhost:8080",
+        "FUSEBOX_TENANT": "claude-desktop"
+      }
+    }
+  }
+}
